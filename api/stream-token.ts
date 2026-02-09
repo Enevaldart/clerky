@@ -1,4 +1,3 @@
-// api/stream-token.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { StreamChat } from 'stream-chat';
 
