@@ -5,7 +5,8 @@ import {
   SignedOut,
   SignInButton,
   SignUpButton,
-  UserButton
+  UserButton,
+  useUser
 } from '@clerk/clerk-react'
 
 import {
@@ -21,14 +22,14 @@ import {
 } from 'stream-chat-react'
 import 'stream-chat-react/dist/css/v2/index.css'  //important for styling
 
-// Streamm API key from dashboard
+// Stream API key from dashboard
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_CHAT_API_KEY
 
 function App() {
   const { isSignedIn, user, isLoaded } = useUser()
   const [activeChannel, setActiveChannel] = useState<any>(null)
 
-  //replcae with a token generated for your Clerk user.id (dev only)
+  //A token generated for your Clerk user.id (dev only)
   const STREAM_USER_TOKEN = import.meta.env.VITE_STREAM_USER_TOKEN
 
   const client = useCreateChatClient({
