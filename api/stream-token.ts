@@ -1,20 +1,13 @@
 // api/stream-token.ts
-import { Handler } from '@vercel/node'; // or just use NodeRequest if using plain
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { StreamChat } from 'stream-chat';
 
-export const config = {
-  runtime: 'nodejs18.x', // or edge if you prefer
-};
-
-const handler: Handler = async (req, res) => {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // For security: in production, verify the request comes from your authenticated user
-  // Here we use a simple header check or Clerk webhook/session – for quick start we'll assume it's called after login
-
-  const userId = req.query.userId as string; // Pass userId from frontend (Clerk user.id)
+  const userId = req.query.userId as string;
 
   if (!userId) {
     return res.status(400).json({ error: 'userId required' });
@@ -27,12 +20,13 @@ const handler: Handler = async (req, res) => {
     return res.status(500).json({ error: 'Stream credentials missing' });
   }
 
-  const serverClient = StreamChat.getInstance(apiKey, apiSecret);
+  try {
+    const serverClient = StreamChat.getInstance(apiKey, apiSecret);
+    const token = serverClient.createToken(userId);
 
-  // Generate token (no expiry for simplicity, or add expiry: Math.floor(Date.now() / 1000) + 3600 for 1 hour)
-  const token = serverClient.createToken(userId);
-
-  return res.status(200).json({ token });
-};
-
-export default handler;
+    return res.status(200).json({ token });
+  } catch (error) {
+    console.error('Error generating token:', error);
+    return res.status(500).json({ error: 'Failed to generate token' });
+  }
+}
