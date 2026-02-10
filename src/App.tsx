@@ -107,21 +107,23 @@ function App() {
         </SignedOut>
 
         <SignedIn>
-          <div className="flex-1 overflow-y-auto">
-            <ChannelList
-              filters={{ type: 'messaging' }}
-              onSelect={(channel) => setActiveChannel(channel)}
-            />
-          </div>
+          <Chat client={client}>
+            <div className="flex-1 overflow-y-auto">
+              <ChannelList
+                filters={{ type: 'messaging' }}
+                onSelect={(channel) => setActiveChannel(channel)}
+              />
+            </div>
 
-          <div className="p-4 border-t border-zinc-800">
-            <button
-              onClick={() => alert('In a real app you would show user list here')}
-              className="w-full py-2 bg-emerald-600 rounded-lg text-sm font-medium"
-            >
-              + New 1-on-1 Chat
-            </button>
-          </div>
+            <div className="p-4 border-t border-zinc-800">
+              <button
+                onClick={() => alert('In a real app you would show user list here')}
+                className="w-full py-2 bg-emerald-600 rounded-lg text-sm font-medium"
+              >
+                + New 1-on-1 Chat
+              </button>
+            </div>
+          </Chat>
         </SignedIn>
       </div>
 
@@ -136,8 +138,8 @@ function App() {
         </SignedOut>
 
         <SignedIn>
-          {activeChannel ? (
-            <Chat client={client}>
+          <Chat client={client}>
+            {activeChannel ? (
               <Channel channel={activeChannel}>
                 <Window>
                   <ChannelHeader />
@@ -146,12 +148,12 @@ function App() {
                 </Window>
                 <Thread />
               </Channel>
-            </Chat>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-zinc-500">
-              Select or create a channel
-            </div>
-          )}
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-zinc-500">
+                Select or create a channel
+              </div>
+            )}
+          </Chat>
         </SignedIn>
       </div>
     </div>
