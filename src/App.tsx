@@ -36,6 +36,7 @@ function App() {
 
     const generateToken = async () => {
       try {
+        console.log('Generating token for user:', user.id)
         const response = await fetch('http://localhost:3001/api/stream-token', {
           method: 'POST',
           headers: {
@@ -45,9 +46,11 @@ function App() {
         })
         
         const data = await response.json()
+        console.log('Token response:', data)
         
         if (data.token) {
           setToken(data.token)
+          console.log('Token set successfully')
         } else {
           console.error('Failed to generate token:', data.error)
         }

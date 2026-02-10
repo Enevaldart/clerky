@@ -10,8 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 // Stream Chat credentials (you should move these to environment variables)
-const STREAM_API_KEY = process.env.STREAM_API_KEY || 'jrc9qhde62zc';
-const STREAM_API_SECRET = process.env.STREAM_API_SECRET || 'your-secret-key-here';
+const STREAM_API_KEY = 'jrc9qhde62zc';
+const STREAM_API_SECRET = '5sqm6e4daxn3wy3mcnpm6hd4snfkw7jvk5t64pw3mxnnund7rdjg56546xv7ehr4'; // You need to add your real secret here
 
 // Token generation endpoint
 app.post('/api/stream-token', async (req, res) => {
