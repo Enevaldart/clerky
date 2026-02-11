@@ -11,8 +11,9 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.60.0",
-    "@vercel/node": "^5.5.33",
+    "@vercel/node": "^4.0.0",
     "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

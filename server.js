@@ -1,6 +1,23 @@
 import express from 'express';
 import cors from 'cors';
 import { StreamChat } from 'stream-chat';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+// Load environment variables manually
+try {
+  const envPath = resolve('.env');
+  const envContent = readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const [key, ...values] = line.split('=');
+    if (key && values.length > 0) {
+      process.env[key.trim()] = values.join('=').trim();
+    }
+  });
+  console.log('Environment variables loaded successfully');
+} catch (error) {
+  console.log('No .env file found, using process environment');
+}
 
 const app = express();
 const PORT = 3001;
@@ -9,9 +26,9 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Stream Chat credentials (you should move these to environment variables)
-const STREAM_API_KEY = 'jrc9qhde62zc';
-const STREAM_API_SECRET = '5sqm6e4daxn3wy3mcnpm6hd4snfkw7jvk5t64pw3mxnnund7rdjg56546xv7ehr4'; // You need to add your real secret here
+// Stream Chat credentials from environment variables
+const STREAM_API_KEY = process.env.STREAM_API_KEY;
+const STREAM_API_SECRET = process.env.STREAM_API_SECRET;
 
 // Token generation endpoint
 app.post('/api/stream-token', async (req, res) => {
