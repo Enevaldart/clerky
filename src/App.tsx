@@ -1,3 +1,4 @@
+//app.tsx
 import './App.css'
 import { useEffect, useState } from 'react'
 import {
@@ -31,6 +32,7 @@ function App() {
   const [token, setToken] = useState<string>('')
   const [showUserList, setShowUserList] = useState(false)
   const [otherUsers, setOtherUsers] = useState<{ id: string; name: string; image?: string }[]>([])
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
 
   // Generate token from backend API
   useEffect(() => {
@@ -91,30 +93,20 @@ function App() {
     if (!client) return
 
     const fetchUsers = async () => {
+      setIsLoadingUsers(true)
       try {
-        // For now, we'll create a simple approach with mock users
-        // In a real app, you'd create a backend endpoint to fetch Clerk users
-        // or use Stream Chat's user query functionality
-        
-        // This is a placeholder - in production you'd:
-        // 1. Create a backend endpoint that queries Clerk users
-        // 2. Or use Stream Chat's built-in user management
-        const mockUsers = [
-          { 
-            id: 'demo-user-1', 
-            name: 'Demo User 1', 
-            image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo1' 
-          },
-          { 
-            id: 'demo-user-2', 
-            name: 'Demo User 2', 
-            image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo2' 
-          },
-        ].filter(mockUser => mockUser.id !== user?.id)
-        
-        setOtherUsers(mockUsers)
+        const response = await fetch('http://localhost:3001/api/users')
+        const data = await response.json()
+
+        if (data.users) {
+          // Filter out current user
+          const filterUsers = data.users.filter((u: any) => u.id !== user.id)
+          setOtherUsers(filteredUsers)
+        }
       } catch (error) {
         console.error('Error fetching users:', error)
+      } finally {
+        setIsLoadingUsers(false)
       }
     }
 
@@ -127,7 +119,10 @@ function App() {
 
     try {
       const channelId = [user.id, otherUser.id].sort().join('-')
-      const channel = client.channel('messaging', channelId)
+      const channel = client.channel('messaging', channelId, {
+        members: [user.id, otherUser.id],
+        name: otherUser.name,
+      })
 
       await channel.watch()
       setActiveChannel(channel)
@@ -137,105 +132,160 @@ function App() {
     }
   }
 
-  if (!isLoaded) return <div className="p-8">loading...</div>
-  if (!client) return <div className="p-8">Connecting to chat...</div>
+  if (!isLoaded) {
+    return  (
+      <div className="flex h-screen bg-zinc-950 items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    )
+  }
+
+  if (isSignedIn && !client) {
+    return (
+      <div className="flex h-screen bg-zinc-950 items-center justify-center">
+        <div className="text-white text-lg">Connecting to chat...</div>
+      </div>
+    )
+  }
 
   return (
     <>
       <div className="flex h-screen bg-zinc-950 text-white">
-      <div className="w-80 border-r border-zinc-800 flex flex-col">
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-          <h1 className="text-xl font-bold">Chatty</h1>
-          <UserButton />
+        <div className="w-80 border-r border-zinc-800 flex flex-col">
+          <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+            <h1 className="text-xl font-bold">Chatty</h1>
+            <SignedIn>
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: "w-10 h-10"
+                  }
+                }}
+                afterSignOutUrl="/"
+              />
+            </SignedIn>
+          </div>
+
+          <SignedOut>
+            <div className="flex-1 flex flex-col items-center justify-center p-6">
+              <div className="w-full space-y-4">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold mb-2">Welcome!</h2>
+                  <p className="text-zinc-400 text-sm">Sign in or create an account to start chatting</p>
+                </div>
+                <SignUpButton mode="modal">
+                  <button className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition-colors">
+                    Sign Up
+                  </button>
+                </SignUpButton>
+                <SignInButton mode="modal">
+                  <button className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-medium transition-colors">
+                    Sign In
+                  </button>
+                </SignInButton>
+              </div>
+            </div>
+          </SignedOut>
+
+          <SignedIn>
+            {client && (
+              <Chat client={client}>
+                <div className="flex-1 overflow-y-auto">
+                  <ChannelList
+                    filters={{ type: 'messaging', members: { $in: [user?.id || ''] } }}
+                    onSelect={(channel) => setActiveChannel(channel)}
+                    options={{
+                      state: true,
+                      presence: true,
+                      limit: 10,
+                    }}
+                  />
+                </div>
+
+                <div className="p-4 border-t border-zinc-800">
+                  <button
+                    onClick={() => setShowUserList(true)}
+                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    + New 1-on-1 Chat
+                  </button>
+                </div>
+              </Chat>
+            )}
+          </SignedIn>
         </div>
 
-        <SignedOut>
-          <div className="p-4 space-y-4">
-            <SignUpButton mode="modal">
-              <button className="w-full py-3 bg-indigo-600 rounded-lg font-medium">Sign Up</button>
-            </SignUpButton>
-            <SignInButton mode="modal">
-              <button className="w-full py-3 bg-zinc-800 rounded-lg font-medium">Sign In</button>
-            </SignInButton>
-          </div>
-        </SignedOut>
-
-        <SignedIn>
-          <Chat client={client}>
-            <div className="flex-1 overflow-y-auto">
-              <ChannelList
-                filters={{ type: 'messaging' }}
-                onSelect={(channel) => setActiveChannel(channel)}
-              />
-            </div>
-
-            <div className="p-4 border-t border-zinc-800">
-              <button
-                onClick={() => setShowUserList(true)}
-                className="w-full py-2 bg-emerald-600 rounded-lg text-sm font-medium"
-              >
-                + New 1-on-1 Chat
-              </button>
-            </div>
-          </Chat>
-        </SignedIn>
-      </div>
-
-      <div className="flex-1 flex flex-col">
-        <SignedOut>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold mb-2">Welcome to Chatty</h2>
-              <p className="text-zinc-400">Sign in to start chatting</p>
-            </div>
-          </div>
-        </SignedOut>
-
-        <SignedIn>
-          <Chat client={client}>
-            {activeChannel ? (
-              <Channel channel={activeChannel}>
-                <Window>
-                  <ChannelHeader />
-                  <MessageList />
-                  <MessageInput />
-                </Window>
-                <Thread />
-              </Channel>
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-zinc-500">
-                Select or create a channel
+        <div className="flex-1 flex flex-col">
+          <SignedOut>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <h2 className="text-3xl font-bold mb-2">Welcome to Chatty</h2>
+                <p className="text-zinc-400">Sign in to start chatting with others</p>
               </div>
+            </div>
+          </SignedOut>
+
+          <SignedIn>
+            {client && (
+              <Chat client={client}>
+                {activeChannel ? (
+                  <Channel channel={activeChannel}>
+                    <Window>
+                      <ChannelHeader />
+                      <MessageList />
+                      <MessageInput />
+                    </Window>
+                    <Thread />
+                  </Channel>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-zinc-500">
+                    <div className="text-center">
+                      <p className="text-lg">Select a channel or start a new conversation</p>
+                    </div>
+                  </div>
+                )}
+              </Chat>
             )}
-          </Chat>
-        </SignedIn>
+          </SignedIn>
+        </div>
       </div>
-    </div>
 
       {/* User List Modal */}
       {showUserList && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+          <div className="bg-zinc-900 rounded-lg p-6 w-96 max-h-[32rem] flex flex-col">
             <h3 className="text-lg font-semibold mb-4">Start a conversation</h3>
-            <div className="space-y-2">
-              {otherUsers.map((otherUser) => (
-                <button
-                  key={otherUser.id}
-                  onClick={() => createOneOnOneChannel(otherUser)}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors"
-                >
-                  <img
-                    src={otherUser.image}
-                    alt={otherUser.name}
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <span className="text-left">{otherUser.name}</span>
-                </button>
-              ))}
-            </div>
+            
+            {isLoadingUsers ? (
+              <div className="flex-1 flex items-center justify-center py-8">
+                <p className="text-zinc-400">Loading users...</p>
+              </div>
+            ) : otherUsers.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center py-8">
+                <p className="text-zinc-400">No other users found</p>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+                {otherUsers.map((otherUser) => (
+                  <button
+                    key={otherUser.id}
+                    onClick={() => createOneOnOneChannel(otherUser)}
+                    className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors"
+                  >
+                    <img
+                      src={otherUser.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUser.id}`}
+                      alt={otherUser.name}
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <span className="text-left">{otherUser.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            
             <button
               onClick={() => setShowUserList(false)}
-              className="mt-4 w-full py-2 bg-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-600 transition-colors"
+              className="w-full py-2 bg-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-600 transition-colors"
             >
               Cancel
             </button>
