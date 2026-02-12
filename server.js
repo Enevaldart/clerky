@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Stream Chat credentials from environment variables
-const STREAM_API_KEY = process.env.STREAM_API_KEY;
+const STREAM_API_KEY = process.env.VITE_STREAM_CHAT_API_KEY;
 const STREAM_API_SECRET = process.env.STREAM_API_SECRET;
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
